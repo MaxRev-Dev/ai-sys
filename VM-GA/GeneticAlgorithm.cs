@@ -126,7 +126,7 @@ namespace VM_GA
                     if (maxF == 0) return j;
                     var retF = curPop[j].Fitness / maxF;
                     if (curPop[j].Fitness >= minF)
-                        if (_random.Next(0, ChromosomeCount) < retF)
+                        if (_random.Next(0, ChromosomeCount) <= retF)
                         {
                             return j;
                         }
@@ -137,7 +137,7 @@ namespace VM_GA
             void repro(int p1, int p2, int ch1, int ch2)
             {
                 int crossPoint, i;
-                if (_random.NextDouble() < CrossProbability)
+                if (_random.NextDouble() <= CrossProbability)
                 {
                     crossPoint = _random.Next(0, Math.Max(curPop[p1].Result.Length, curPop[p2].Result.Length));
                     _info.Crossovers++;
@@ -161,7 +161,7 @@ namespace VM_GA
 
             Op mutate(Op gene)
             {
-                if (_random.NextDouble() > MutationProbability)
+                if (_random.NextDouble() <= MutationProbability)
                 {
                     gene = randInstruction();
                     _info.Mutations++;
