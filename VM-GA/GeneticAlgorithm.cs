@@ -2,20 +2,59 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using VirtualMachine;
+using VM_GA.Abstractions;
 
 namespace VM_GA
 {
     public class GeneticAlgorithm
     {
-        private Random _random = new Random();
-        private int _currentResultLength;
+        #region Fields
+
         private static readonly Exception LockEx = new InvalidOperationException("This instance is locked for changes");
+        private static readonly Random _random = new Random();
+        private int _currentResultLength;
+        private GAInfo _info = new GAInfo();
+        private int _maxGenerations = 100000;
+        private int _chromosomeCount = 10;
+        private int _maxResultLength = 20;
+        private int _minResultLength = 1;
+        private float _crossProbability = 0.9f;
+        private float _mutationProbability = 0.05f;
+        public event Action<IGAInfo> NewGeneration = null!;
+        public event Action<IGAInfo> NewLoop = null!;
+        private Func<Random, float[]> _getTestArgs = r => new float[2].Select(x => (float)(r ?? _random).Next(-30, 31)).ToArray();
+        private Func<float[], float> _testAnswer = args => args[0] * args[0] + args[1] * args[1];// args[0] * args[0] * args[0] + args[1] * args[1] + args[2];
+
+        #endregion
+
+        #region Properties
+
+        public Func<float[], float> TestAnswer
+        {
+            get => _testAnswer;
+            set {
+                if (Busy)
+                    throw LockEx;
+                _testAnswer = value;
+            }
+        }
+
+        public Func<Random, float[]> GetTestArgs
+        {
+            get => _getTestArgs;
+            set {
+                if (Busy)
+                    throw LockEx;
+                _getTestArgs = value;
+            }
+        }
+
         public float CrossProbability
         {
             get => _crossProbability;
-            set
-            {
-                if (_locked)
+            set {
+                if (Busy)
                     throw LockEx;
                 _crossProbability = value;
             }
@@ -25,7 +64,7 @@ namespace VM_GA
         {
             get => _mutationProbability;
             set {
-                if (_locked)
+                if (Busy)
                     throw LockEx;
                 _mutationProbability = value;
             }
@@ -35,7 +74,7 @@ namespace VM_GA
         {
             get => _minResultLength;
             set {
-                if (_locked)
+                if (Busy)
                     throw LockEx;
                 _minResultLength = value;
             }
@@ -45,7 +84,7 @@ namespace VM_GA
         {
             get => _maxResultLength;
             set {
-                if (_locked)
+                if (Busy)
                     throw LockEx;
                 _maxResultLength = value;
             }
@@ -55,7 +94,7 @@ namespace VM_GA
         {
             get => _chromosomeCount;
             set {
-                if (_locked)
+                if (Busy)
                     throw LockEx;
                 _chromosomeCount = value;
             }
@@ -65,28 +104,19 @@ namespace VM_GA
         {
             get => _maxGenerations;
             set {
-                if (_locked)
+                if (Busy)
                     throw LockEx;
                 _maxGenerations = value;
             }
         }
 
-        private GAInfo _info = new GAInfo();
-        private bool _locked;
-        private int _maxGenerations = 100000;
-        private int _chromosomeCount = 10;
-        private int _maxResultLength = 20;
-        private int _minResultLength = 10;
-        private float _crossProbability = 0.7f;
-        private float _mutationProbability = 0.9f;
-        public event Action<IGAInfo> NewGeneration = null!;
-        public event Action<IGAInfo> NewLoop = null!;
+        public bool Busy { get; private set; }
 
-        public bool Busy => _locked;
+        #endregion
 
         public bool Process(CancellationToken cancellationToken)
         {
-            _locked = true;
+            Busy = true;
             _info = new GAInfo();
             for (int i = _info.OperatorWorld = MinResultLength; i < MaxResultLength; i++, _info.OperatorWorld++)
             {
@@ -94,22 +124,21 @@ namespace VM_GA
                 _currentResultLength = i;
                 if (ProcessOnce(cancellationToken))
                 {
-                    _locked = false;
+                    Busy = false;
                     return true;
                 }
 
                 _info.Crossovers = _info.Mutations = 0;
             }
 
-            _locked = false;
-            return false;
+            Busy = false;
+            return _info.Results.Any();
         }
 
         public bool ProcessOnce(CancellationToken cancellationToken)
         {
-            Func<float> randArg = () => _random.Next(-30, 31);
             Func<Op> randInstruction = () => (Op)_random.Next(0, (int)Op.MAX_INSTRUCTION);
-            var vm = new VirtualMachine();
+            var vm = new VirtualMachine.VirtualMachine();
             var curPop = InitializePopulation(ChromosomeCount, randInstruction).ToList();
             var nextPop = InitializePopulation(ChromosomeCount, randInstruction).ToList();
             var generation = 0;
@@ -126,7 +155,7 @@ namespace VM_GA
                     if (maxF == 0) return j;
                     var retF = curPop[j].Fitness / maxF;
                     if (curPop[j].Fitness >= minF)
-                        if (_random.Next(0, ChromosomeCount) <= retF)
+                        if (_random.Next(0, ChromosomeCount) < retF)
                         {
                             return j;
                         }
@@ -172,7 +201,7 @@ namespace VM_GA
 
             void selection()
             {
-                for (int j = 0; j < ChromosomeCount-1; j += 2)
+                for (int j = 0; j < ChromosomeCount - 1; j += 2)
                 {
                     var p1 = selectParent();
                     var p2 = selectParent();
@@ -182,9 +211,6 @@ namespace VM_GA
                 }
             }
 
-            Func<float[], float> ans = args => args[0] * args[0] * args[0] + args[1] * args[1] + args[2];
-            Func<float[]> getRandArgs = () => new float[3].Select(x => randArg()).ToArray();
-
             bool fitnessCheck()
             {
                 minF = 1000f;
@@ -192,33 +218,37 @@ namespace VM_GA
                 totF = 0f;
                 for (var i = 0; i < curPop.Count; i++)
                 {
-                    var args1 = getRandArgs();
+                    var args1 = GetTestArgs(_random);
                     var result = vm.STM(curPop[i].Result, args1);
                     var ch = curPop[i];
                     if (vm.Error == Err.NONE)
                     {
-                        ch.Fitness += 10f;
-                        if (result - ans(args1) < 0.00001)
+                        var diff = Math.Abs(result - TestAnswer(args1));
+                        ch.Fitness += 1;
+                        if (diff < 0.001)
                         {
+                            var testResult = new TestResult(ch, _currentResultLength, generation);
                             // we have candidate. let's test it
-                            for (int j = 0, v = 0; j < 10; j++)
+                            for (int j = 0, v = 1; j < 10; j++)
                             {
-                                // preform final check
-                                var args2 = getRandArgs();
-                                if (Math.Abs(vm.STM(curPop[i].Result, args2) - ans(args2)) < 0.00001)
+                                // perform final check
+                                var args2 = GetTestArgs(_random);
+                                if (Math.Abs(vm.STM(curPop[i].Result, args2) - TestAnswer(args2)) < 0.001)
                                 {
+                                    testResult.Passed();
                                     ch.Fitness += 1000f;
-                                    if (++v > 8)
+                                    if (v++ >= 5)
                                     {
-                                        Result = ch;
-                                        return true;
+                                        if (!_info.Results.Contains(testResult))
+                                            _info.AddResult(testResult);
                                     }
                                 }
                             }
                         }
                     }
 
-                    if (cancellationToken.IsCancellationRequested) return false;
+                    if (cancellationToken.IsCancellationRequested)
+                        return _info.Results.Any();
 
                     if (minF > ch.Fitness)
                     {
@@ -250,7 +280,8 @@ namespace VM_GA
                 {
                     return true;
                 }
-                if (cancellationToken.IsCancellationRequested) return false;
+                if (cancellationToken.IsCancellationRequested)
+                    return _info.Results.Any();
 
                 _info.Generation++;
                 NewGeneration?.Invoke(_info);
@@ -258,8 +289,6 @@ namespace VM_GA
 
             return false;
         }
-
-        public Chromosome Result { get; private set; }
 
         private IEnumerable<Chromosome> InitializePopulation(int chrCount, Func<Op> randSelector)
         {
@@ -277,6 +306,12 @@ namespace VM_GA
             public int OperatorWorld { get; set; }
             public int Crossovers { get; set; }
             public int Mutations { get; set; }
+            public List<ITestResult> Results { get; } = new List<ITestResult>();
+
+            public void AddResult(ITestResult result)
+            {
+                Results.Add(result);
+            }
         }
     }
 }

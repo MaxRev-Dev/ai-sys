@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\VM-GA\GeneticAlgorithm.csproj" />
+    <ProjectReference Include="..\VirtualMachine\VirtualMachine.csproj" />
   </ItemGroup>
 
 </Project>

@@ -15,4 +15,8 @@
     <PackageReference Include="System.Data.Common" Version="4.3.0" />
     <PackageReference Include="System.Data.SqlClient" Version="4.8.2" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\VirtualMachine\VirtualMachine.csproj" />
+  </ItemGroup>
 </Project>

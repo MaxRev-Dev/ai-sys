@@ -1,4 +1,5 @@
 ﻿using System;
+using VirtualMachine;
 
 namespace VM_GA
 {

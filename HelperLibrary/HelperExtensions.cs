@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Text;
 
-namespace MaxRev.Helpers
+namespace HelperLibrary
 {
     public static class HelperExtensions
     {
@@ -13,6 +13,16 @@ namespace MaxRev.Helpers
             new ArgumentException("Vector size differs");
         public static readonly Exception ConfigurationError =
             new ArgumentException("You must configure algorithm before use");
+
+        public static T Next<T>(this T enumValue) where T : Enum
+        {
+            var values = Enum.GetValues(typeof(T))
+                .Cast<T>().ToList();
+            var index = values.FindIndex(x => Equals(x, enumValue));
+            if (index == values.Count - 1)
+                index = -1;
+            return values[++index];
+        }
 
         public static bool[] BitwiseAnd(this bool[] a, bool[] b)
         {

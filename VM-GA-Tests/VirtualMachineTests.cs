@@ -1,5 +1,5 @@
 using System.Linq;
-using VM_GA;
+using VirtualMachine;
 using Xunit;
 
 namespace VM_GA_Tests
@@ -30,7 +30,7 @@ namespace VM_GA_Tests
             new[] { 2, 2 }, 1)]
         public void VmAcceptsCommands1(Op[] ops, int[] vsInts, int expected)
         {
-            var vm = new VirtualMachine();
+            var vm = new VirtualMachine.VirtualMachine();
             Assert.Equal(expected, vm.STM(ops, vsInts.Select(x=>(float)x)));
         }
 
@@ -52,7 +52,7 @@ namespace VM_GA_Tests
             new[] { 1, 2, 3 }, 8)]
         public void VmAcceptsCommands2(Op[] ops, int[] vsInts, int expected)
         {
-            var vm = new VirtualMachine();
+            var vm = new VirtualMachine.VirtualMachine();
             Assert.Equal(expected, vm.STM(ops, vsInts.Select(x => (float)x)));
         }
     }

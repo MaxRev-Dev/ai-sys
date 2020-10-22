@@ -1,13 +1,12 @@
 ﻿using MaxRev.Extensions.Binary;
 using MaxRev.Extensions.Matrix;
-using MaxRev.Helpers;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
 using System.Text;
 using System.Timers;
 using System.Windows.Forms;
+using HelperLibrary;
 using Timer = System.Timers.Timer;
 
 namespace ART1

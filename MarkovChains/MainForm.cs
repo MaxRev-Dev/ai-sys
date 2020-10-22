@@ -1,5 +1,4 @@
-﻿using MaxRev.Helpers;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq;
@@ -9,6 +8,7 @@ using System.Text.Json;
 using System.Timers;
 using System.Web;
 using System.Windows.Forms;
+using HelperLibrary;
 using Timer = System.Timers.Timer;
 
 namespace MarkovChains

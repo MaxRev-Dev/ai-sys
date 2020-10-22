@@ -2,26 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace VM_GA
+namespace VirtualMachine
 {
-    public enum Op
-    {
-        DUP,
-        SWAP,
-        MUL,
-        ADD,
-        DIV,
-        OVER,
-        NOP,
-        MAX_INSTRUCTION = NOP + 1,
-    }
-
-    public enum Err
-    {
-        NONE,
-        STACK_VIOLATION,
-        MATH_VIOLATION,
-    }
     public class VirtualMachine
     {
         private static int
@@ -49,7 +31,7 @@ namespace VM_GA
             return _stack[_stackPointer - 1];
         }
 
-        public float[] Stack => _stack;
+        public IReadOnlyCollection<float> Stack => _stack;
         public int Pointer => _stackPointer;
         public Err Error { get; private set; } = Err.NONE;
 
