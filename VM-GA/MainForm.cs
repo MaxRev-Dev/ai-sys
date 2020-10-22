@@ -116,9 +116,13 @@ namespace VM_GA
                             Invoke(new Action(() =>
                             {
                                 _currentSeries.Points.AddXY(_info.Generation, _info.MaxFitness);
-                                _currentSeries2.Points.AddXY(_info.Generation, _info.AverageFitness);
-                                richTextBox1.Text = "Processing...\n";
-                                richTextBox1.Text += currentTimeString();
+                                _currentSeries2.Points.AddXY(_info.Generation, _info.AverageFitness); 
+                                var sb = new StringBuilder();
+                                sb.AppendLine("Processing...");
+                                sb.AppendLine($"Crossovers: {info.Crossovers}");
+                                sb.AppendLine($"Mutations: {info.Mutations}"); 
+                                sb.AppendLine(currentTimeString());
+                                richTextBox1.Text = sb.ToString();
                             }));
                     }
 
@@ -157,6 +161,8 @@ namespace VM_GA
                     sb.AppendLine($"Generation (world {_info.OperatorWorld}): {gen}");
                     sb.AppendLine($"Operators count: {ga.Result.Result.Length}");
                     sb.AppendLine($"Operators: {string.Join(" ", ga.Result.Result)}");
+                    sb.AppendLine($"Crossovers: {_info.Crossovers}");
+                    sb.AppendLine($"Mutations: {_info.Mutations}");
                 }
                 else
                 {

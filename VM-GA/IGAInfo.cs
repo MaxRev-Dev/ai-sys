@@ -7,5 +7,7 @@
         float AverageFitness { get; }
         int Generation { get; }
         int OperatorWorld { get; }
+        int Crossovers { get; }
+        int Mutations { get; }
     }
 }

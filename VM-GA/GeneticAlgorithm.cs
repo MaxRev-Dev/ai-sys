@@ -97,6 +97,8 @@ namespace VM_GA
                     _locked = false;
                     return true;
                 }
+
+                _info.Crossovers = _info.Mutations = 0;
             }
 
             _locked = false;
@@ -138,6 +140,7 @@ namespace VM_GA
                 if (_random.NextDouble() < CrossProbability)
                 {
                     crossPoint = _random.Next(0, Math.Max(curPop[p1].Result.Length, curPop[p2].Result.Length));
+                    _info.Crossovers++;
                 }
                 else
                 {
@@ -161,6 +164,7 @@ namespace VM_GA
                 if (_random.NextDouble() > MutationProbability)
                 {
                     gene = randInstruction();
+                    _info.Mutations++;
                 }
 
                 return gene;
@@ -168,7 +172,7 @@ namespace VM_GA
 
             void selection()
             {
-                for (int j = 0; j < ChromosomeCount; j += 2)
+                for (int j = 0; j < ChromosomeCount-1; j += 2)
                 {
                     var p1 = selectParent();
                     var p2 = selectParent();
@@ -193,7 +197,7 @@ namespace VM_GA
                     var ch = curPop[i];
                     if (vm.Error == Err.NONE)
                     {
-                        ch.Fitness += 0.001f;
+                        ch.Fitness += 10f;
                         if (result - ans(args1) < 0.00001)
                         {
                             // we have candidate. let's test it
@@ -271,6 +275,8 @@ namespace VM_GA
             public float AverageFitness { get; set; }
             public int Generation { get; set; }
             public int OperatorWorld { get; set; }
+            public int Crossovers { get; set; }
+            public int Mutations { get; set; }
         }
     }
 }
