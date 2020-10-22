@@ -24,7 +24,8 @@ namespace VM_GA
         public event Action<IGAInfo> NewGeneration = null!;
         public event Action<IGAInfo> NewLoop = null!;
         private Func<Random, float[]> _getTestArgs = r => new float[2].Select(x => (float)(r ?? _random).Next(-30, 31)).ToArray();
-        private Func<float[], float> _testAnswer = args => args[0] * args[0] + args[1] * args[1];// args[0] * args[0] * args[0] + args[1] * args[1] + args[2];
+        private Func<float[], float> _testAnswer = args => args[0] * args[0] + args[1] * args[1]; // x^2+y^2
+        // args[0] * args[0] * args[0] + args[1] * args[1] + args[2]; // x^3+y^2+z
 
         #endregion
 
