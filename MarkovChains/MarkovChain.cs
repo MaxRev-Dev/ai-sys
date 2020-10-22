@@ -72,7 +72,7 @@ namespace MarkovChains
 
             if (preserveLength) return sb.ToString();
 
-            while (last.Last() != '.')
+            while (last.Any() && last.Last() != '.')
             {
                 w = dict.ContainsKey(last) ? dict[last] : dict[nullW];
                 last = Choose(w);

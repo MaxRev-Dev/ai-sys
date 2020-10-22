@@ -18,7 +18,7 @@ namespace MarkovChains
         private readonly Timer _heartBeat = new Timer();
         private bool _redrawRequired = true;
         private readonly MarkovChain _chain;
-        private string newsLink = "https://api-news.nuwee.maxrev.pp.ua/api/news?html=0";
+        private string newsLink = "https://api-news.nuwee.maxrev.pp.ua/api/news?html=0&offset=0,100";
         private ExpandoObject cachedJsonNews;
         private int _resultLength;
 
@@ -95,7 +95,10 @@ namespace MarkovChains
                     item.GetProperty("detailed").GetProperty("content")
                 ).Select(text => text.ToString()))
             {
-                sb.AppendLine(HttpUtility.HtmlDecode(raw));
+                var txt = HttpUtility.HtmlDecode(raw).Replace("\r\n", " ")
+                    .Split(' ', StringSplitOptions.RemoveEmptyEntries).ToArray();
+                foreach (var s in txt)
+                    sb.Append(s + " ");
             }
             richTextBox1.Text = sb.ToString();
         }

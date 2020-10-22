@@ -1,53 +1,64 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace VM_GA
 {
+    public enum Op
+    {
+        DUP,
+        SWAP,
+        MUL,
+        ADD,
+        DIV,
+        OVER,
+        NOP,
+        MAX_INSTRUCTION = NOP + 1,
+    }
+
+    public enum Err
+    {
+        NONE,
+        STACK_VIOLATION,
+        MATH_VIOLATION,
+    }
     public class VirtualMachine
     {
-        public enum Op
-        {
-            DUP = 0x00,
-            SWAP = 0x01,
-            MUL = 0x02,
-            ADD = 0x03,
-            OVER = 0x04,
-            NOP = 0x05,
-            MAX_INSTRUCTION = NOP + 1,
-        }
-
         private static int
-            NONE = 0,
-            STACK_VIOLATION = 1,
-            MATH_VIOLATION = 2,
             STACK_DEPTH = 25;
 
-        private int stackPointer;
-        private readonly int[] stack; 
-        
+        private int _stackPointer;
+        private readonly float[] _stack;
+
         public VirtualMachine()
         {
-            stack = new int[STACK_DEPTH];
+            _stack = new float[STACK_DEPTH];
         }
 
-        private void Push(int arg)
+        private void Push(float arg)
         {
-            stack[stackPointer++] = arg;
+            _stack[_stackPointer++] = arg;
         }
-        private int Pop()
+        private float Pop()
         {
-            return stack[stackPointer--];
-        }
-
-        private int Peek()
-        {
-            return stack[stackPointer];
+            return _stack[--_stackPointer];
         }
 
-        public void STM(Op[] program, int[] args)
+        private float Peek()
         {
-            int pc = 0; 
-            int a , b;
+            return _stack[_stackPointer - 1];
+        }
+
+        public float[] Stack => _stack;
+        public int Pointer => _stackPointer;
+        public Err Error { get; private set; } = Err.NONE;
+
+        public float STM(Op[] program, IEnumerable<float> args)
+        {
+            Error = 0;
+            _stackPointer = 0;
+            int pc = 0;
+            float a, b;
 
             foreach (var t in args.Reverse()) Push(t);
 
@@ -56,25 +67,38 @@ namespace VM_GA
                 switch (program[pc++])
                 {
                     case Op.DUP:
+                        if (AssertStackElems(1)) break;
+                        if (AssertStackNotFull()) break;
                         Push(Peek());
                         break;
                     case Op.SWAP:
-                        a = stack[stackPointer];
-                        stack[stackPointer] = stack[stackPointer - 1];
-                        stack[stackPointer - 1] = a;
+                        if (AssertStackElems(2)) break;
+                        a = _stack[_stackPointer - 1];
+                        _stack[_stackPointer - 1] = _stack[_stackPointer - 2];
+                        _stack[_stackPointer - 2] = a;
                         break;
                     case Op.MUL:
+                        if (AssertStackElems(2)) break;
                         a = Pop();
                         b = Pop();
                         Push(a * b);
                         break;
                     case Op.ADD:
+                        if (AssertStackElems(2)) break;
                         a = Pop();
                         b = Pop();
                         Push(a + b);
                         break;
+                    case Op.DIV:
+                        if (AssertStackElems(2)) break;
+                        if (AssertDivBy0()) break;
+                        a = Pop();
+                        b = Pop();
+                        Push(b / a);
+                        break;
                     case Op.OVER:
-                        Push(stack[stackPointer - 1]);
+                        if (AssertStackElems(2)) break;
+                        Push(_stack[_stackPointer - 2]);
                         break;
                     case Op.NOP:
                         break;
@@ -84,6 +108,29 @@ namespace VM_GA
                         throw new ArgumentOutOfRangeException();
                 }
             }
+
+            return _stack[_stackPointer - 1];
+        }
+
+        private bool AssertDivBy0()
+        {
+            if (_stack[_stackPointer - 1] == 0)
+                Error = Err.MATH_VIOLATION;
+            return (int)Error != 0;
+        }
+
+        private bool AssertStackElems(int i)
+        {
+            if (_stackPointer < i)
+                Error = Err.STACK_VIOLATION;
+            return (int)Error != 0;
+        }
+
+        private bool AssertStackNotFull()
+        {
+            if (_stackPointer == STACK_DEPTH)
+                Error = Err.STACK_VIOLATION;
+            return (int)Error > 0;
         }
     }
 }
