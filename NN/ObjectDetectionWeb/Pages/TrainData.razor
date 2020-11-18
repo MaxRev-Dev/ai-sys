@@ -1,0 +1,127 @@
+﻿@page "/trainData"
+@using ObjectDetectionWeb.Data
+@inject TrainDataService _tds;
+
+
+<div class="container">
+    <div class="row mt-3">
+        <div class="col">
+            <h3>Train Data</h3>
+            <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                    <label class="input-group-text">Record for</label>
+                </div>
+                <select class="custom-select" id="inputGroupSelect01" @bind="_currentRpsKey">
+                    @foreach (var v in _tds.Keys)
+                    {
+                        <option value="@v">@v</option>
+                    }
+                </select>
+            </div>
+            <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                    <div class="input-group-text">
+                        Custom key
+                    </div>
+                </div>
+                <div class="input-group-append">
+                    <div class="input-group-text">
+                        <input type="text" @bind="_inputKeyValue">
+                    </div>
+                </div>
+            </div>
+            <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                    <div class="input-group-text">
+                        <input type="checkbox" @bind="_testData">
+                    </div>
+                </div>
+
+                <div class="input-group-append">
+                    <span class="input-group-text">Validation data</span>
+                </div>
+            </div>
+
+            <div class="btn-group" role="group" aria-label="Basic example">
+                <button class="btn btn-info" type="button"
+                        @onclick="RecordSequence">
+                    @(!_tds.RecordEnabled ? "Record sequence" : "Stop recording")
+                </button>
+                <button class="btn btn-primary"
+                        type="button"
+                        disabled="@_tds.IsBusy"
+                        @onclick="TrainModel">
+                    Train model
+                </button>
+            </div>
+
+            <h4 class="text-info my-4">Is Training: @_tds.IsBusy</h4>
+
+            @if (_tds.IsBusy)
+            {
+                <div class="spinner-border" role="status">
+                    <span class="sr-only">Loading...</span>
+                </div>
+            }
+            @if (_tds.Log2.Any())
+            {
+                <pre class="row">@string.Join("\n", _tds.Log2.ToArray())</pre>
+            }
+
+        </div>
+        
+        @if (!_tds.IsBusy)
+        {
+            <div class="col">
+                <img src="data:image/png;base64,@_frame"/>
+                <p>Saved: @_tds.Saved.Count</p>
+                <ul class="list-group">
+                    @foreach (var u in _tds.Saved)
+                    {
+                        <li class="list-group-item">
+                            <p>@u.Key</p><img src="data:image/png;base64,@u.Value"/>
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private string _currentRpsKey;
+    private bool _testData;
+    private string _frame;
+    private string _inputKeyValue;
+
+    /// <inheritdoc />
+    protected override async Task OnInitializedAsync()
+    {
+        if (!_tds.IsBusy)
+            await foreach (var u in _tds.GetStream())
+            {
+                _frame = Convert.ToBase64String(u);
+                StateHasChanged();
+            }
+    }
+
+    public async void RecordSequence()
+    {
+        if (_tds.RecordEnabled)
+        {
+            _tds.RecordEnabled = false;
+            return;
+        }
+        var key = _currentRpsKey;
+        if (key == "<custom>")
+        {
+            key = _inputKeyValue;
+        }
+        await _tds.RecordSequence(key, _testData, () => base.InvokeAsync(StateHasChanged));
+    }
+
+    private async Task TrainModel()
+    {
+        await _tds.TrainModelAsync(() => base.InvokeAsync(StateHasChanged));
+    }
+}

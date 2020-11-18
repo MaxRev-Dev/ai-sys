@@ -1,0 +1,134 @@
+﻿@page "/detect"
+@using ObjectDetectionWeb.Data
+@using System.Threading
+@inject ObjectDetectionService ObjectDetectionService
+@inject RpsGame rpsService
+@inject SharedVideoSource svs
+@inject TrainDataService __typeHelper
+
+<h1>Live image classification using OpenCV and ML.NET</h1>
+
+<div class="row">
+    <div class="col-sm">
+        <img src="data:image/png;base64,@_imgSrc" />
+        <ul class="list-group">
+            <li class="list-group-item">
+                <div class="btn-group" role="group" aria-label="Basic example">
+
+                    <button type="button" class="btn btn-primary"
+                            @onclick="LetsPlay">
+                        @(!rpsService.GameEnabled ? "Let's Play" : "Stop game")
+                    </button>
+                    <button type="button" class="btn btn-primary"
+                            @onclick="CameraToggle">
+                        @(_cameraOn ? "Capture ON" : "Capture OFF")
+                    </button>
+                </div>
+            </li>
+            <li class="list-group-item">
+                <div class="input-group mb-3">
+                    <div class="input-group-prepend">
+                        <div class="input-group-text">
+                            <input type="checkbox" @bind-value="_enableRecogniion"
+                                   aria-label="Checkbox for following text input">
+                        </div>
+                    </div>
+
+                    <div class="input-group-append">
+                        <span class="input-group-text">Enable recognition engine</span>
+                    </div>
+
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <div class="col-sm">
+        @if (_imgSrc == null)
+        {
+            <div class="spinner-border" role="status">
+                <span class="sr-only">Loading...</span>
+            </div>
+        }
+        else
+        {
+            @if (ObjectDetectionService.Recognition &&
+  ObjectDetectionService.DetectionResult != default)
+            {
+                <h4>Class: @ObjectDetectionService.DetectionResult.Prediction</h4>
+                <h4>Confidence: @_confidence</h4>
+            }
+            @if (ObjectDetectionService.IsEnabled && rpsService.GameEnabled)
+            {
+                <h4>AI move: @rpsService.AIMove</h4>
+                <h4>Current status: @rpsService.Status</h4>
+                @if (rpsService.Winner != default)
+                {
+                    <div class="text-center">
+                        <h3>Winner</h3>
+                        <pre style="font-size: 1.em">@rpsService.Winner</pre>
+                    </div>
+                }
+            }
+        }
+    </div>
+</div>
+
+@code {
+    private string _imgSrc;
+    private bool _enableRecogniion;
+    private bool _cameraOn;
+    private string _confidence;
+
+    public void CameraToggle()
+    {
+        _cameraOn = !_cameraOn;
+        _enableRecogniion =
+        ObjectDetectionService.Recognition = _cameraOn;
+        if (!_cameraOn)
+        {
+            svs.StopCameraCapture();
+            _imgSrc = default;
+        }
+        else
+        {
+            svs.StartCameraCapture();
+        }
+    }
+
+    public void LetsPlay()
+    {
+        if (!rpsService.GameEnabled)
+        {
+            _enableRecogniion = ObjectDetectionService.Recognition = true;
+            rpsService.StartGame();
+        }
+        else
+        {
+            rpsService.StopGame();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await foreach (var frame in ObjectDetectionService.GetStream())
+        {
+            if (!_cameraOn)
+            {
+                _imgSrc = default;
+                await Task.Delay(100);
+                continue;
+            }
+            ObjectDetectionService.Recognition = _enableRecogniion;
+            _imgSrc = Convert.ToBase64String(frame);
+            if (ObjectDetectionService.DetectionResult != default)
+            {
+                _confidence = string.Join(",", ObjectDetectionService.DetectionResult.Score.Where(x => x > .5));
+                if (string.IsNullOrEmpty(_confidence))
+                    _confidence = "unconfident";
+                rpsService.OnHeartbeat();
+            }
+            StateHasChanged();
+        }
+    }
+}
