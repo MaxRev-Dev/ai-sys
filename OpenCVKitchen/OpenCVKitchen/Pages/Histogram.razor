@@ -1,0 +1,101 @@
+﻿@page "/histogram"
+@using OpenCVKitchen.Data
+@using System.Reflection
+@inject ImageService ImageService
+@inject SharedVideoSource VideoSource
+<h1>OpenCV - Histogram</h1>
+
+<div class="row">
+    <div class="col">
+        <div class="container">
+            @if (_imgSrcSource != default)
+            {
+                <img src="data:image/png;base64,@_imgSrcSource" />
+            }
+
+            <div class="input-group mb-3 w-25">
+                <div class="input-group-prepend">
+                    <label class="input-group-text">Record for</label>
+                </div>
+                <select class="custom-select" id="inputGroupSelect01" @bind="_currentValue">
+                    @foreach (var v in _keys)
+                    {
+                        <option value="@v">@v</option>
+                    }
+                </select>
+            </div>
+            <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                    <div class="input-group-text">
+                        Alfa
+                    </div>
+                </div>
+                <div class="input-group-append">
+                    <div class="input-group-text">
+                        <input type="text" @bind="_alfa">
+                    </div>
+                </div>
+            </div>
+            <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                    <div class="input-group-text">
+                        Beta
+                    </div>
+                </div>
+                <div class="input-group-append">
+                    <div class="input-group-text">
+                        <input type="text" @bind="_beta">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col">
+        @foreach (var r in _dict)
+        {
+            <div class="container justify-content-center">
+                <h3 class="text-center">@r.Key</h3>
+                <img class="d-flex mx-auto" src="data:image/png;base64,@r.Value" />
+            </div>
+        }
+    </div>
+</div>
+@code {
+    private readonly Dictionary<string, string> _dict = new Dictionary<string, string>();
+    private string _imgSrcSource;
+    private string _currentValue;
+    private float _beta = 0;
+    private float _alfa = 1;
+    private string[] _keys;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var op = new ImageOperator();
+        var methods = op.GetType().GetMethods()
+            .Where(x => x.ReturnType == typeof(byte[])).ToArray();
+        _keys = methods.Select(x => x.Name).ToArray();
+        _currentValue = _keys[0];
+        await foreach (var frame in ImageService.GetStream())
+        {
+            _dict.Clear();
+            op.Alfa = _alfa;
+            op.Beta = _beta;
+            await Task.Run(() =>
+            {
+                foreach (MethodInfo method in methods)
+                {
+                    if (method.Name == _currentValue)
+                    {
+                        var result = (byte[])method.Invoke(op, new object[] { frame });
+
+                        _dict[method.Name] = Convert.ToBase64String(result);
+                    }
+                }
+            });
+
+            _imgSrcSource = Convert.ToBase64String(VideoSource.Current.ToBytes());
+            StateHasChanged();
+        }
+    }
+}

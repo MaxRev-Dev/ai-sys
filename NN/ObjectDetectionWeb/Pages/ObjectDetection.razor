@@ -10,7 +10,10 @@
 
 <div class="row">
     <div class="col-sm">
-        <img src="data:image/png;base64,@_imgSrc" />
+        @if (_imgSrc != default)
+        {
+            <img src="data:image/png;base64,@_imgSrc"/>
+        }
         <ul class="list-group">
             <li class="list-group-item">
                 <div class="btn-group" role="group" aria-label="Basic example">
@@ -66,7 +69,7 @@
                 {
                     <div class="text-center">
                         <h3>Winner</h3>
-                        <pre style="font-size: 1.em">@rpsService.Winner</pre>
+                        <pre style="font-size: 1em">@rpsService.Winner</pre>
                     </div>
                 }
             }

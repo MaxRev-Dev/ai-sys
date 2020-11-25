@@ -12,7 +12,7 @@ namespace ObjectDetectionWeb.Data
     {
         private readonly SharedVideoSource _capture;
         private readonly IOptions<ModelEnvConfiguration> _config;
-        private CancellationToken token;
+        private CancellationToken _token;
 
         public bool Recognition { get; set; }
 
@@ -63,7 +63,7 @@ namespace ObjectDetectionWeb.Data
                     DetectionResult = predictionResult;
                 }
                 yield return bytes;
-                await Task.Delay(100, token);
+                await Task.Delay(100, _token);
             }
         }
     }
