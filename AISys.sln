@@ -25,13 +25,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VirtualMachine", "VirtualMa
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "AI", "AI", "{EF10CB58-874F-446A-BE29-E3B87765225F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AISysML.Model", "NN\AISysML.Model\AISysML.Model.csproj", "{EBA01F64-0F43-4D48-B555-9DE253F401EA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AISysML.Model", "AI\AISysML.Model\AISysML.Model.csproj", "{EBA01F64-0F43-4D48-B555-9DE253F401EA}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ObjectDetectionWeb", "NN\ObjectDetectionWeb\ObjectDetectionWeb.csproj", "{778B595A-5DA7-4BE4-9DBA-C2BCFC44CC71}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ObjectDetectionWeb", "AI\ObjectDetectionWeb\ObjectDetectionWeb.csproj", "{778B595A-5DA7-4BE4-9DBA-C2BCFC44CC71}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "OpenCV", "OpenCV", "{5A225313-24A0-42A1-923F-2BA7CE774707}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenCVKitchen", "OpenCVKitchen\OpenCVKitchen\OpenCVKitchen.csproj", "{8430F6BC-4205-4540-BABD-5DF5AF62B63B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenCVKitchen", "OpenCVKitchen\OpenCVKitchen.csproj", "{8430F6BC-4205-4540-BABD-5DF5AF62B63B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
