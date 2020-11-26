@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using OpenCvSharp;
 
 namespace OpenCVKitchen.Data
@@ -25,6 +26,33 @@ namespace OpenCVKitchen.Data
             Cv2.ExtractChannel(mat_s, ret, 2);
             return ret.ToBytes();
         }
+
+        public byte[] WarpPerspective(Mat mat_s)
+        {
+            var ret = new Mat(mat_s.Size(), MatType.CV_8UC1);
+             
+            var target = new List<Point2f>
+            {
+                new Point(0, 0),
+                new Point(mat_s.Width, 0),
+                new Point(mat_s.Width, mat_s.Height),
+                new Point(0, mat_s.Height)
+            };
+
+            Mat trans = Cv2.GetPerspectiveTransform(corners, target);
+
+            Mat src = new Mat(bitmap.getHeight(), bitmap.getWidth(), MatType.CV_8SC1);
+             
+            Mat dst = new Mat(bitmap.getHeight(), bitmap.getWidth(), MatType.CV_8SC1 );
+
+            Cv2.WarpPerspective(src, dst, trans, dst.Size());
+
+            return ret.ToBytes();
+        }
+
+
+
+
 
         public byte[] HistogramAuto(Mat mat)
         {

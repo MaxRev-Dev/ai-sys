@@ -1,7 +1,13 @@
 ﻿@page "/"
+@inject NavigationManager NavigationManager
 
-<h1>Hello, world!</h1>
+<h1>Hold on. Project is loading...</h1>
+  
 
-Welcome to your new app.
-
-<SurveyPrompt Title="How is Blazor working for you?" />
+@code
+{
+    protected override void OnAfterRender(bool firstRender)
+    {
+        NavigationManager.NavigateTo("/operations");
+    }
+}
