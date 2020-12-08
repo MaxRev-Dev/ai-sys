@@ -20,9 +20,26 @@ namespace OpenCVKitchen.Data.Operators
             var grad = new Mat();
             Cv2.AddWeighted(absGradX, 0.5, absGradY, 0.5, 0, grad);
             
-            var edges = gray.Canny(100, 200);
+            var edges = grad.Canny(LTr, HTr);
             return edges;
         }
+
+        public Mat Sobel(Mat frame)
+        {
+            var gray = frame.CvtColor(ColorConversionCodes.BGR2GRAY);
+            var blur = gray
+                .GaussianBlur(new Size(ksize, ksize), 0);
+            return blur.Sobel(MatType.CV_16S, 1, 0, ksize, scale, delta);
+        }
+
+        public Mat Canny(Mat frame)
+        {
+            var gray = frame.CvtColor(ColorConversionCodes.BGR2GRAY);
+            return gray.Canny(LTr,HTr, ksize);
+        }
+
+        public double LTr { get; set; } = 100;
+        public double HTr { get; set; } = 200;
 
         public double delta { get; set; }
 
