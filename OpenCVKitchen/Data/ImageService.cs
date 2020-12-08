@@ -1,6 +1,6 @@
-using OpenCvSharp;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using OpenCvSharp;
 
 namespace OpenCVKitchen.Data
 {
@@ -18,9 +18,9 @@ namespace OpenCVKitchen.Data
             _capture.StartCameraCapture();
             while (true)
             {
-                using var mat = _capture.Current;
+                using Mat mat = _capture.Current;
                 if (mat == default || mat.IsDisposed || mat.Empty()) continue;
-                yield return mat;
+                yield return mat.Clone();
                 await Task.Delay(100);
             }
         }

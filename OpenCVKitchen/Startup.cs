@@ -4,6 +4,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using OpenCVKitchen.Data;
+using OpenCVKitchen.Data.Operators;
+using OpenCVKitchen.Data.Operators.Configuration;
 
 namespace OpenCVKitchen
 {
@@ -22,6 +24,9 @@ namespace OpenCVKitchen
             services.AddServerSideBlazor();
             services.AddSingleton<SharedVideoSource>();
             services.AddSingleton<ImageService>();
+            services.AddSingleton<FileConfig>();
+            services.AddSingleton<FaceDetectionOperator>();
+            services.AddSingleton<VideoRecorderOperator>();
         } 
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)

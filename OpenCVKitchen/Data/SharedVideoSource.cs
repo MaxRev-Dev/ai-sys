@@ -6,12 +6,16 @@ namespace OpenCVKitchen.Data
 {
     public class SharedVideoSource
     {
-        private VideoCapture _capture;
         private CancellationTokenSource _cameraTcs;
-        private CancellationToken _token;
+        private VideoCapture _capture;
 
         private volatile Mat _current;
         private volatile bool _isActive;
+        private CancellationToken _token;
+
+        public Mat Current => _current;
+        public bool Enabled => _isActive;
+        public VideoCapture Capture => _capture;
 
         public void StartCameraCapture()
         {
@@ -23,11 +27,10 @@ namespace OpenCVKitchen.Data
             }
         }
 
-        public Mat Current => _current;
-        public bool Enabled => _isActive;
-
-        public void StopCameraCapture() =>
+        public void StopCameraCapture()
+        {
             _cameraTcs?.Cancel();
+        }
 
         public async Task Retrieve(CancellationToken token = default)
         {
@@ -38,10 +41,7 @@ namespace OpenCVKitchen.Data
 
             _capture.Open(0, VideoCaptureAPIs.DSHOW);
 
-            if (!_capture.IsOpened())
-            {
-                return;
-            }
+            if (!_capture.IsOpened()) return;
 
             try
             {
@@ -49,15 +49,17 @@ namespace OpenCVKitchen.Data
                     CancellationTokenSource.CreateLinkedTokenSource(token,
                         _token);
 
-                var ltsToken = lts.Token;
+                CancellationToken ltsToken = lts.Token;
                 while (!ltsToken.IsCancellationRequested)
                 {
-                    using var mat = _capture.RetrieveMat().Flip(FlipMode.Y);
+                    using Mat mat = _capture.RetrieveMat().Flip(FlipMode.Y);
                     _current = mat.Clone();
                     await Task.Delay(1, ltsToken);
                 }
             }
-            catch (TaskCanceledException) { }
+            catch (TaskCanceledException)
+            {
+            }
             finally
             {
                 _capture.Release();

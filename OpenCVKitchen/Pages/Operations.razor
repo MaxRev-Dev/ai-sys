@@ -1,14 +1,28 @@
 ﻿@page "/operations"
 @using OpenCVKitchen.Data
 @using System.Reflection
+@using OpenCVKitchen.Data.Operators.Abstractions
+@using System.Drawing
+@using System.Collections
+@using OpenCvSharp
 @inject ImageService ImageService
 @inject SharedVideoSource VideoSource
+@inject IJSRuntime JS
+@inject IServiceProvider ServiceProvider
 
 <style>
     .canvainput {
         position: absolute;
-        width: inherit;
-        height: inherit;
+        width: 100%;
+        height: 100%;
+        left: 0;
+        top: 0;
+        right: 0;
+        bottom: 0;
+    }
+
+    .img-wrapper {
+        position: relative;
     }
 </style>
 
@@ -20,44 +34,86 @@
             @if (_imgSrcSource != default)
             {
                 <h3 class="text-center">Original</h3>
-                <img class="img-fluid" src="data:image/png;base64,@_imgSrcSource" />
+                <div class="img-wrapper">
+                    <img class="img-fluid" id="imgOrig" src="data:image/png;base64,@_imgSrcSource" />
+                    <canvas class="canvainput" id="canvasPlace" @onclick="OnImgClick"></canvas>
+                </div>
             }
 
             <div class="input-group mb-3">
                 <div class="input-group-prepend">
                     <label class="input-group-text">Operator</label>
                 </div>
-                <select class="custom-select" id="inputGroupSelect01" @bind="_currentValue">
+                <select class="custom-select" @bind="_currentValueName">
                     @foreach (var v in _keys)
                     {
                         <option value="@v">@v</option>
                     }
                 </select>
             </div>
-            <div class="input-group mb-3">
-                <div class="input-group-prepend">
-                    <div class="input-group-text">
-                        Alfa
-                    </div>
-                </div>
-                <div class="input-group-append">
-                    <div class="input-group-text">
-                        <input type="text" @bind="_alfa">
-                    </div>
-                </div>
-            </div>
-            <div class="input-group mb-3">
-                <div class="input-group-prepend">
-                    <div class="input-group-text">
-                        Beta
-                    </div>
-                </div>
-                <div class="input-group-append">
-                    <div class="input-group-text">
-                        <input type="text" @bind="_beta">
-                    </div>
-                </div>
-            </div>
+            <ul class="list-group">
+                @foreach (var option in _currentValueOptions)
+                {
+                    @if (option.PropertyType == typeof(string)) continue;
+                    @if (option.Name.Equals("Enabled")) continue;
+                    @if (option.Name.Equals("Priority")) continue;
+                    <li class="list-group-item">
+                        @if (option.PropertyType.BaseType == typeof(Enum))
+                        {
+                            <div class="input-group mb-3">
+                                <div class="input-group-prepend">
+                                    <label class="input-group-text">@option.Name</label>
+                                </div>
+                                <select class="custom-select"
+                                        @onchange="(e)=> OnCustomSelect(option,e)">
+                                    @foreach (var v in GetListEnum(option))
+                                    {
+                                        <option value="@v">@v</option>
+                                    }
+                                </select>
+                            </div>
+                        }
+                        else if (option.PropertyType == typeof(double) ||
+                                 option.PropertyType == typeof(int) ||
+                                 option.PropertyType == typeof(float))
+                        {
+                            <div class="input-group mb-3">
+                                <div class="input-group-prepend">
+                                    <div class="input-group-text">
+                                        @option.Name
+                                    </div>
+                                </div>
+                                <div class="input-group-append">
+                                    <div class="input-group-text">
+                                        <input type="text"
+                                               value="@option.GetValue(_currentValue)"
+                                               @onchange="(e)=> OnCustomInputChange(option,e)">
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                        else if (option.PropertyType == typeof(bool))
+                        {
+                            <div class="input-group mb-3">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">@option.Name</span>
+                                </div>
+                                <div class="input-group-prepend">
+                                    <div class="input-group-text">
+                                        <input type="checkbox"
+                                               value="@option.GetValue(_currentValue)"
+                                               @onchange="(e)=> OnCustomInputChange(option,e)">
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <p>Can't bind @option.Name of type @option.PropertyType</p>
+                        }
+                    </li>
+                }
+            </ul>
         </div>
     </div>
 
@@ -66,46 +122,176 @@
         {
             <div class="container justify-content-center">
                 <h3 class="text-center">@r.Key</h3>
-
-                <img class="img-fluid d-flex mx-auto" src="data:image/png;base64,@r.Value" />
+                <div>
+                    <img class="img-fluid d-flex mx-auto" src="data:image/png;base64,@r.Value" />
+                </div>
+                <div class="input-group mb-3">
+                    <div class="input-group-prepend">
+                        <label class="input-group-text">Action</label>
+                    </div>
+                    <select class="custom-select" @bind="_currentValueField">
+                        @foreach (var v in _keysMethods)
+                        {
+                            <option value="@v">@v</option>
+                        }
+                    </select>
+                </div>
+                <div class="btn-group mb-3"> 
+                    @foreach (var v in _actions)
+                    {
+                        <button class="btn btn-primary p-3" @onclick="()=>Execute(v)">@v.Name</button>
+                    }
+                </div>
             </div>
+        }
+        @if (!_dict.Any())
+        {
+            <p>@_err</p>
         }
     </div>
 </div>
+
+
 @code {
     private readonly Dictionary<string, string> _dict = new Dictionary<string, string>();
+    private string _err;
     private string _imgSrcSource;
-    private string _currentValue;
-    private float _beta = 0;
-    private float _alfa = 1;
+    private string _currentValueName;
+    private string _currentValueField;
     private string[] _keys;
+    private string[] _keysMethods;
+    private readonly List<PointF> _points = new List<PointF>();
+    private List<PropertyInfo> _currentValueOptions
+        = new List<PropertyInfo>();
+
+    private ImageOperator _currentValue;
+    private MethodInfo[] _actions;
 
     protected override async Task OnInitializedAsync()
     {
-        var op = new ImageOperator();
-        var methods = op.GetType().GetMethods()
-            .Where(x => x.ReturnType == typeof(byte[])).ToArray();
-        _keys = methods.Select(x => x.Name).ToArray();
-        _currentValue = _keys[0];
+        var operatorBase = typeof(ImageOperator);
+        var opers = Assembly.GetExecutingAssembly().GetTypes()
+            .Where(x => x.BaseType == operatorBase)
+            .Select(x => ServiceProvider.GetService(x) ?? Activator.CreateInstance(x))
+            .Cast<ImageOperator>()
+            .OrderByDescending(x => x.Priority).ToArray();
+        _currentValueName = opers.First().GetType().Name;
+        _keys = opers.Select(x => x.Name).ToArray();
         await foreach (var frame in ImageService.GetStream())
         {
             _dict.Clear();
-            op.Alfa = _alfa;
-            op.Beta = _beta;
+
+
             await Task.Run(() =>
             {
-                foreach (MethodInfo method in methods)
+                foreach (var imageOperator in opers)
                 {
-                    if (method.Name != _currentValue) continue;
-
-                    var result = (byte[])method.Invoke(op, new object[] { frame });
-
-                    _dict[method.Name] = Convert.ToBase64String(result);
+                    if (_currentValueName != imageOperator.Name) continue;
+                    _currentValue = imageOperator;
+                    var tOper = imageOperator.GetType();
+                    var methods = tOper.GetMethods()
+                        .Where(x => x.ReturnType == typeof(Mat)).ToArray();
+                    _keysMethods = methods.Select(x => x.Name).ToArray();
+                    if (!_keysMethods.Any()) continue;
+                    _actions = tOper.GetMethods()
+                     .Where(x =>
+                         x.GetCustomAttributes<OperatorControlAttribute>().Any()).ToArray();
+                    if (!_keysMethods.Contains(_currentValueField))
+                        _currentValueField = _keysMethods[0];
+                    var props = tOper.GetProperties();
+                    if (!_currentValueOptions.SequenceEqual(props))
+                    {
+                        _currentValueOptions = props.ToList();
+                    }
+                    foreach (MethodInfo method in methods)
+                    {
+                        if (method.Name != _currentValueField) continue;
+                        try
+                        {
+                            using var result = (Mat)method.Invoke(imageOperator, new object[] { frame });
+                            if (result != default)
+                                _dict[method.Name] = Convert.ToBase64String(result.ToBytes());
+                            _err = null;
+                        }
+                        catch (Exception e)
+                        {
+                            _err = e.Message;
+                        }
+                    }
+                    break;
                 }
             });
-
+            if (VideoSource.Current.IsDisposed) continue;
             _imgSrcSource = Convert.ToBase64String(VideoSource.Current.ToBytes());
             StateHasChanged();
         }
     }
+
+    private void OnImgClick(MouseEventArgs obj)
+    {
+        _points.Add(new PointF(
+            (float)(obj.ClientX),
+            (float)(obj.ClientY)));
+        if (_points.Count > 4)
+        {
+            _points.RemoveAt(0);
+
+            CanvasDrawLines();
+        }
+    }
+
+    private void CanvasDrawLines()
+    {
+        JS.InvokeVoidAsync("canvasDraw", _points);
+    }
+
+    private List<string> GetListEnum(PropertyInfo option)
+    {
+        return Enum.GetValues(option.PropertyType)
+            .Cast<object>().Select(x => x.ToString()).ToList();
+    }
+
+    private void OnCustomInputChange(PropertyInfo option, ChangeEventArgs e)
+    {
+        try
+        {
+
+            option.SetValue(_currentValue,
+                Convert.ChangeType(e.Value, option.PropertyType));
+        }
+        catch (FormatException ex)
+        {
+            _err = ex.Message;
+        }
+    }
+
+    private void OnCustomSelect(PropertyInfo option, ChangeEventArgs e)
+    {
+        try
+        {
+            option.SetValue(_currentValue,
+                Enum.Parse(option.PropertyType, e.Value as string));
+        }
+        catch (FormatException ex)
+        {
+            _err = ex.Message;
+        }
+    }
+
+    private async void Execute(MethodInfo methodInfo)
+    {
+        var param = Array.Empty<object>();
+        if (methodInfo.GetParameters().SingleOrDefault() is { } pi &&
+            pi.ParameterType == typeof(IAsyncEnumerable<Mat>))
+        {
+            param = new object[] { ImageService.GetStream() };
+        }
+        var result = methodInfo.Invoke(_currentValue, param);
+        if (methodInfo.ReturnType == typeof(Task))
+        {
+            if (result is Task t)
+                await t;
+        }
+    }
+
 }
