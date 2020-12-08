@@ -21,8 +21,7 @@ namespace OpenCVKitchen.Data.Operators
         private readonly object _gateLines = new object();
 
         public Mat Preview(Mat frame)
-        {
-
+        { 
             var hsv = frame.CvtColor(ColorConversionCodes.BGR2HSV);
 
             var dst = new Mat();

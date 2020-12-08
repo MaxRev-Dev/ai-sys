@@ -56,11 +56,6 @@ namespace OpenCVKitchen.Data.Operators
             _isRecording = true;
         }
 
-        [OperatorControl]
-        public void StopRecording()
-        {
-            _isRecording = false;
-        }
 
         public Mat Preview(Mat frame)
         {
@@ -120,6 +115,12 @@ namespace OpenCVKitchen.Data.Operators
                 }
 
             _currentFrame = default;
+        }
+
+        [OperatorControl]
+        public void StopRecording()
+        {
+            _isRecording = false;
         }
 
         private Mat ApplyOperator(Mat frame, Size _currentSize)
