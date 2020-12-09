@@ -11,7 +11,7 @@ Lab 3 - VM+Genetic Algorithm: [VM-GA](VM-GA/)
 
 Lab 4 - Markov Chains:  [MarkovChains](MarkovChains/)
 
-Lab 5 - Neural Network Image Classification:  [MarkovChains](MarkovChains/)
+Lab 5 - Neural Network Image Classification:  [ObjectDetectionWeb](AI/ObjectDetectionWeb/Data)
 
 ## OpenCV
 Lab 6 - Histogram:  [HistogramOperator.cs](OpenCVKitchen/Data/Operators/HistogramOperator.cs)
