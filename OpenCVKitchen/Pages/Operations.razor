@@ -1,9 +1,8 @@
 ﻿@page "/operations"
-@using OpenCVKitchen.Data
 @using System.Reflection
+@using OpenCVKitchen.Data
 @using OpenCVKitchen.Data.Operators.Abstractions
 @using System.Drawing
-@using System.Collections
 @using OpenCvSharp
 @inject ImageService ImageService
 @inject SharedVideoSource VideoSource
@@ -12,18 +11,16 @@
 
 <style>
     .canvainput {
-        position: absolute;
-        width: 100%;
+        bottom: 0;
         height: 100%;
         left: 0;
-        top: 0;
+        position: absolute;
         right: 0;
-        bottom: 0;
+        top: 0;
+        width: 100%;
     }
 
-    .img-wrapper {
-        position: relative;
-    }
+    .img-wrapper { position: relative; }
 </style>
 
 <h1>OpenCV - Operations</h1>
@@ -35,7 +32,7 @@
             {
                 <h3 class="text-center">Original</h3>
                 <div class="img-wrapper">
-                    <img class="img-fluid" id="imgOrig" src="data:image/png;base64,@_imgSrcSource" />
+                    <img class="img-fluid" id="imgOrig" src="data:image/png;base64,@_imgSrcSource"/>
                     <canvas class="canvainput" id="canvasPlace" @onclick="OnImgClick"></canvas>
                 </div>
             }
@@ -52,7 +49,7 @@
                 </select>
             </div>
             <ul class="list-group">
-                @foreach (var option in _currentValueOptions)
+                @foreach (PropertyInfo option in _currentValueOptions)
                 {
                     @if (option.PropertyType == typeof(string)) continue;
                     @if (option.Name.Equals("Enabled")) continue;
@@ -65,7 +62,7 @@
                                     <label class="input-group-text">@option.Name</label>
                                 </div>
                                 <select class="custom-select"
-                                        @onchange="(e)=> OnCustomSelect(option,e)">
+                                        @onchange="e => OnCustomSelect(option, e)">
                                     @foreach (var v in GetListEnum(option))
                                     {
                                         <option value="@v">@v</option>
@@ -87,7 +84,7 @@
                                     <div class="input-group-text">
                                         <input type="text"
                                                value="@option.GetValue(_currentValue)"
-                                               @onchange="(e)=> OnCustomInputChange(option,e)">
+                                               @onchange="e => OnCustomInputChange(option, e)">
                                     </div>
                                 </div>
                             </div>
@@ -102,7 +99,7 @@
                                     <div class="input-group-text">
                                         <input type="checkbox"
                                                value="@option.GetValue(_currentValue)"
-                                               @onchange="(e)=> OnCustomInputChange(option,e)">
+                                               @onchange="e => OnCustomInputChange(option, e)">
                                     </div>
                                 </div>
                             </div>
@@ -123,7 +120,7 @@
             <div class="container justify-content-center">
                 <h3 class="text-center">@r.Key</h3>
                 <div>
-                    <img class="img-fluid d-flex mx-auto" src="data:image/png;base64,@r.Value" />
+                    <img class="img-fluid d-flex mx-auto" src="data:image/png;base64,@r.Value"/>
                 </div>
                 <div class="input-group mb-3">
                     <div class="input-group-prepend">
@@ -136,10 +133,10 @@
                         }
                     </select>
                 </div>
-                <div class="btn-group mb-3"> 
-                    @foreach (var v in _actions)
+                <div class="btn-group mb-3">
+                    @foreach (MethodInfo v in _actions)
                     {
-                        <button class="btn btn-primary p-3" @onclick="()=>Execute(v)">@v.Name</button>
+                        <button class="btn btn-primary p-3" @onclick="() => Execute(v)">@v.Name</button>
                     }
                 </div>
             </div>
@@ -161,6 +158,7 @@
     private string[] _keys;
     private string[] _keysMethods;
     private readonly List<PointF> _points = new List<PointF>();
+
     private List<PropertyInfo> _currentValueOptions
         = new List<PropertyInfo>();
 
@@ -169,7 +167,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var operatorBase = typeof(ImageOperator);
+        Type operatorBase = typeof(ImageOperator);
         var opers = Assembly.GetExecutingAssembly().GetTypes()
             .Where(x => x.BaseType == operatorBase)
             .Select(x => ServiceProvider.GetService(x) ?? Activator.CreateInstance(x))
@@ -177,25 +175,25 @@
             .OrderByDescending(x => x.Priority).ToArray();
         _currentValueName = opers.First().GetType().Name;
         _keys = opers.Select(x => x.Name).ToArray();
-        await foreach (var frame in ImageService.GetStream())
+        await foreach (Mat frame in ImageService.GetStream())
         {
             _dict.Clear();
 
 
             await Task.Run(() =>
             {
-                foreach (var imageOperator in opers)
+                foreach (ImageOperator imageOperator in opers)
                 {
                     if (_currentValueName != imageOperator.Name) continue;
                     _currentValue = imageOperator;
-                    var tOper = imageOperator.GetType();
+                    Type tOper = imageOperator.GetType();
                     var methods = tOper.GetMethods()
                         .Where(x => x.ReturnType == typeof(Mat)).ToArray();
                     _keysMethods = methods.Select(x => x.Name).ToArray();
                     if (!_keysMethods.Any()) continue;
                     _actions = tOper.GetMethods()
-                     .Where(x =>
-                         x.GetCustomAttributes<OperatorControlAttribute>().Any()).ToArray();
+                        .Where(x =>
+                            x.GetCustomAttributes<OperatorControlAttribute>().Any()).ToArray();
                     if (!_keysMethods.Contains(_currentValueField))
                         _currentValueField = _keysMethods[0];
                     var props = tOper.GetProperties();
@@ -208,7 +206,7 @@
                         if (method.Name != _currentValueField) continue;
                         try
                         {
-                            using var result = (Mat)method.Invoke(imageOperator, new object[] { frame });
+                            using var result = (Mat) method.Invoke(imageOperator, new object[] {frame});
                             if (result != default)
                                 _dict[method.Name] = Convert.ToBase64String(result.ToBytes());
                             _err = null;
@@ -230,8 +228,8 @@
     private void OnImgClick(MouseEventArgs obj)
     {
         _points.Add(new PointF(
-            (float)(obj.ClientX),
-            (float)(obj.ClientY)));
+            (float) obj.ClientX,
+            (float) obj.ClientY));
         if (_points.Count > 4)
         {
             _points.RemoveAt(0);
@@ -255,7 +253,6 @@
     {
         try
         {
-
             option.SetValue(_currentValue,
                 Convert.ChangeType(e.Value, option.PropertyType));
         }
@@ -284,7 +281,7 @@
         if (methodInfo.GetParameters().SingleOrDefault() is { } pi &&
             pi.ParameterType == typeof(IAsyncEnumerable<Mat>))
         {
-            param = new object[] { ImageService.GetStream() };
+            param = new object[] {ImageService.GetStream()};
         }
         var result = methodInfo.Invoke(_currentValue, param);
         if (methodInfo.ReturnType == typeof(Task))

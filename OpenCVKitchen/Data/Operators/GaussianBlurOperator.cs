@@ -13,7 +13,7 @@ namespace OpenCVKitchen.Data.Operators
 
         public double SigX { get; set; } = 1;
 
-        public Mat GaussianBlur(Mat mat_s)
+        public override Mat Preview(Mat mat_s)
         {
             Mat ret = mat_s.GaussianBlur(
                 new Size(Size, Size), SigX, SigY, BorderType);

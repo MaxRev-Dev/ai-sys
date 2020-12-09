@@ -10,22 +10,29 @@ namespace OpenCVKitchen.Data.Operators
 {
     public class VideoRecorderOperator : ImageOperator
     {
-        private Size _dsize;
-        private string _tmp;
-        private VideoWriter _writer;
+        public enum RecorderEffect
+        {
+            Morph,
+            Blur
+        }
+
         private readonly IHostEnvironment _env;
         private readonly SharedVideoSource _sharedVideoSource;
         private Mat _currentFrame;
+        private Size _dsize;
         private bool _isRecording;
+        private string _tmp;
+        private VideoWriter _writer;
 
-        public VideoRecorderOperator(IHostEnvironment env, SharedVideoSource sharedVideoSource)
+        public VideoRecorderOperator(IHostEnvironment env,
+            SharedVideoSource sharedVideoSource)
         {
             _env = env;
             _sharedVideoSource = sharedVideoSource;
         }
 
 
-        public float Fps { get; set; } = 40; 
+        public float Fps { get; set; } = 40;
         public double SigmaX { get; set; } = 10;
         public double SigmaY { get; set; } = 10;
         public RecorderEffect Effect { get; set; } = RecorderEffect.Blur;
@@ -34,13 +41,6 @@ namespace OpenCVKitchen.Data.Operators
         public int StartSize { get; set; } = 10;
         public int EndSize { get; set; } = 100;
 
-        public enum RecorderEffect
-        {
-            Morph,
-            Blur,
-        }
-
-        [OperatorControl]
         private void Initialize()
         {
             if (_isRecording) return;
@@ -49,15 +49,15 @@ namespace OpenCVKitchen.Data.Operators
             Directory.CreateDirectory(tmpFolder);
             _tmp = Path.Combine(tmpFolder, $"capture-{DateTime.Now.Ticks}.avi");
 
-            var c = _sharedVideoSource.Capture;
+            VideoCapture c = _sharedVideoSource.Capture;
             _dsize = new Size(c.FrameWidth, c.FrameHeight);
-            _writer = new VideoWriter(_tmp, VideoCaptureAPIs.FFMPEG, FourCC.IYUV, 10, _dsize);
+            _writer = new VideoWriter(_tmp, VideoCaptureAPIs.FFMPEG,
+                FourCC.IYUV, 10, _dsize);
 
             _isRecording = true;
         }
 
-
-        public Mat Preview(Mat frame)
+        public override Mat Preview(Mat frame)
         {
             if (_currentFrame == default)
                 return frame;
@@ -75,7 +75,8 @@ namespace OpenCVKitchen.Data.Operators
             var _currentSizeR = StartSize;
             var _currentSize = new Size(_currentSizeR, _currentSizeR);
             using (_writer)
-                await foreach (var frame in sequence)
+            {
+                await foreach (Mat frame in sequence)
                 {
                     if (frame.Empty() ||
                         !_isRecording)
@@ -83,6 +84,9 @@ namespace OpenCVKitchen.Data.Operators
 
                     if (_writer.IsDisposed)
                         Initialize();
+
+                    frames++;
+
                     var secs = frames / 10;
                     if (secs % 1 == 0)
                     {
@@ -102,17 +106,16 @@ namespace OpenCVKitchen.Data.Operators
                         _currentSize = new Size(_currentSizeR, _currentSizeR);
                     }
 
-                    frames++;
-
                     _currentFrame = ApplyOperator(frame, _currentSize);
 
                     _writer.Write(_currentFrame);
 
-                    await Task.Delay((int)(1000f / Fps));
+                    await Task.Delay((int) (1000f / Fps));
                     if (StartSize > EndSize && _currentSizeR >= StartSize ||
                         StartSize < EndSize && _currentSizeR >= EndSize)
                         break;
                 }
+            }
 
             _currentFrame = default;
         }
@@ -129,11 +132,12 @@ namespace OpenCVKitchen.Data.Operators
             {
                 return Effect switch
                 {
-                    RecorderEffect.Blur => 
+                    RecorderEffect.Blur =>
                         frame.GaussianBlur(_currentSize, SigmaX, SigmaY),
                     RecorderEffect.Morph =>
-                        frame.MorphologyEx(MorphType, 
-                            Cv2.GetStructuringElement(MorphShape, _currentSize)),
+                        frame.MorphologyEx(MorphType,
+                            Cv2.GetStructuringElement(MorphShape,
+                                _currentSize)),
                     _ => frame
                 };
             }
@@ -144,6 +148,5 @@ namespace OpenCVKitchen.Data.Operators
 
             return frame;
         }
-
     }
 }

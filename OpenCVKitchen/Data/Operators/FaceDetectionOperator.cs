@@ -39,7 +39,7 @@ namespace OpenCVKitchen.Data.Operators
 
         public int Size { get; set; } = 40;
 
-        public Mat Detect(Mat frame)
+        public override Mat Preview(Mat frame)
         {
             if (_prevFrame != default)
             {
@@ -59,7 +59,7 @@ namespace OpenCVKitchen.Data.Operators
                         };
                 return DetectFace(_currentClassifier, frame);
             }
-             
+
             _prevFrame = frame;
             return frame;
         }

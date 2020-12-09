@@ -8,6 +8,11 @@ namespace OpenCVKitchen.Data.Operators
         public float Alfa { get; set; } = 1;
         public float Beta { get; set; } = 0;
 
+        public override Mat Preview(Mat frame)
+        {
+            return frame;
+        }
+
         public Mat HistogramAuto(Mat mat)
         {
             int Width = mat.Cols, Height = mat.Rows;

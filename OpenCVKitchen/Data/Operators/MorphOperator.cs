@@ -8,6 +8,11 @@ namespace OpenCVKitchen.Data.Operators
         public int Size { get; set; } = 5;
         public MorphShapes Shape { get; set; } = MorphShapes.Cross;
 
+        public override Mat Preview(Mat frame)
+        {
+            return frame;
+        }
+
         public Mat Close(Mat mat_s)
         {
             Mat ret = GetMorph(mat_s, MorphTypes.Close);

@@ -7,7 +7,6 @@ namespace OpenCVKitchen.Data
     public class SharedVideoSource
     {
         private CancellationTokenSource _cameraTcs;
-        private VideoCapture _capture;
 
         private volatile Mat _current;
         private volatile bool _isActive;
@@ -15,7 +14,7 @@ namespace OpenCVKitchen.Data
 
         public Mat Current => _current;
         public bool Enabled => _isActive;
-        public VideoCapture Capture => _capture;
+        public VideoCapture Capture { get; private set; }
 
         public void StartCameraCapture()
         {
@@ -37,11 +36,11 @@ namespace OpenCVKitchen.Data
             if (_isActive)
                 return;
             _isActive = true;
-            _capture ??= new VideoCapture();
+            Capture ??= new VideoCapture();
 
-            _capture.Open(0, VideoCaptureAPIs.DSHOW);
+            Capture.Open(0, VideoCaptureAPIs.DSHOW);
 
-            if (!_capture.IsOpened()) return;
+            if (!Capture.IsOpened()) return;
 
             try
             {
@@ -52,7 +51,7 @@ namespace OpenCVKitchen.Data
                 CancellationToken ltsToken = lts.Token;
                 while (!ltsToken.IsCancellationRequested)
                 {
-                    using Mat mat = _capture.RetrieveMat().Flip(FlipMode.Y);
+                    using Mat mat = Capture.RetrieveMat().Flip(FlipMode.Y);
                     _current = mat.Clone();
                     await Task.Delay(1, ltsToken);
                 }
@@ -62,7 +61,7 @@ namespace OpenCVKitchen.Data
             }
             finally
             {
-                _capture.Release();
+                Capture.Release();
                 _isActive = false;
             }
         }

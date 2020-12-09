@@ -17,7 +17,7 @@ namespace OpenCVKitchen
         }
 
         public IConfiguration Configuration { get; }
-         
+
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddRazorPages();
@@ -27,7 +27,7 @@ namespace OpenCVKitchen
             services.AddSingleton<FileConfig>();
             services.AddSingleton<FaceDetectionOperator>();
             services.AddSingleton<VideoRecorderOperator>();
-        } 
+        }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {

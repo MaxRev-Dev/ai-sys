@@ -5,6 +5,11 @@ namespace OpenCVKitchen.Data.Operators
 {
     public class RGBChannelOperator : ImageOperator
     {
+        public override Mat Preview(Mat frame)
+        {
+            return frame;
+        }
+
         public Mat ChannelR(Mat mat_s)
         {
             Mat g = mat_s.ExtractChannel(2);

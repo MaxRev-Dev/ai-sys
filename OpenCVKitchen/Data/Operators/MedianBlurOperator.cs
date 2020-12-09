@@ -7,9 +7,9 @@ namespace OpenCVKitchen.Data.Operators
     {
         public int Size { get; set; } = 5;
 
-        public Mat MedianBlur(Mat mat_s)
+        public override Mat Preview(Mat frame)
         {
-            return mat_s.MedianBlur(Size);
+            return frame.MedianBlur(Size);
         }
     }
 }

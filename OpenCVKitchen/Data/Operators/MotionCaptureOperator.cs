@@ -5,24 +5,23 @@ namespace OpenCVKitchen.Data.Operators
 {
     public class MotionCaptureOperator : ImageOperator
     {
-        public int Size { get; set; } = 10;
+        private readonly object _gateLines = new object();
+        private readonly int iHighH = 179;
+        private readonly int iHighS = 255;
+        private readonly int iHighV = 255;
 
-        private int iLowH = 170;
-        private int iHighH = 179;
-        private int iLowS = 150;
-        private int iHighS = 255;
-        private int iLowV = 60;
-        private int iHighV = 255;
+        private readonly int iLowH = 170;
+        private readonly int iLowS = 150;
+        private readonly int iLowV = 60;
 
         private double iLastX = -1;
         private double iLastY = -1;
         private Mat imgLines;
-        private Size _frameSize;
-        private readonly object _gateLines = new object();
+        public int Size { get; set; } = 10;
 
-        public Mat Preview(Mat frame)
-        { 
-            var hsv = frame.CvtColor(ColorConversionCodes.BGR2HSV);
+        public override Mat Preview(Mat frame)
+        {
+            Mat hsv = frame.CvtColor(ColorConversionCodes.BGR2HSV);
 
             var dst = new Mat();
             Cv2.InRange(hsv, new Scalar(iLowH, iLowS, iLowV),
@@ -31,7 +30,7 @@ namespace OpenCVKitchen.Data.Operators
             Morph(dst, MorphTypes.Open);
             Morph(dst, MorphTypes.Close);
 
-            var mom = Cv2.Moments(dst);
+            Moments mom = Cv2.Moments(dst);
 
             if (mom.M00 > 10000)
             {
@@ -40,18 +39,12 @@ namespace OpenCVKitchen.Data.Operators
 
                 lock (_gateLines)
                 {
-                    if (imgLines == null)
-                    {
-                        _frameSize = frame.Size();
-                        imgLines = Mat.Zeros(_frameSize, MatType.CV_8UC3)
-                            .ToMat();
-                    }
+                    imgLines ??= Mat.Zeros(frame.Size(), MatType.CV_8UC3)
+                        .ToMat();
 
                     if (iLastX >= 0 && iLastY >= 0 && posX >= 0 && posY >= 0)
-                    {
                         Cv2.Line(imgLines, new Point(posX, posY),
                             new Point(iLastX, iLastY), Scalar.AliceBlue, 2);
-                    }
 
                     iLastX = posX;
                     iLastY = posY;
@@ -68,7 +61,9 @@ namespace OpenCVKitchen.Data.Operators
         {
             // just to ensure it won't be kicked
             lock (_gateLines)
+            {
                 imgLines = default;
+            }
         }
 
         private void Morph(Mat frame, MorphTypes morphTypes)
