@@ -39,6 +39,8 @@ namespace OpenCVKitchen.Data.Operators
 
         private Mat GetMorph(Mat matS, MorphTypes mtype)
         {
+            if (Size % 2 != 1)
+                Size++;
             return matS.MorphologyEx(mtype,
                 Cv2.GetStructuringElement(Shape,
                     new Size(Size, Size)));

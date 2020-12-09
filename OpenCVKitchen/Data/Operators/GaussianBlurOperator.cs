@@ -15,6 +15,8 @@ namespace OpenCVKitchen.Data.Operators
 
         public override Mat Preview(Mat mat_s)
         {
+            if (Size % 2 != 1)
+                Size++;
             Mat ret = mat_s.GaussianBlur(
                 new Size(Size, Size), SigX, SigY, BorderType);
             return ret;
