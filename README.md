@@ -20,7 +20,7 @@ Lab 7 - Equalization/Normalization:   [HistogramOperator.cs](OpenCVKitchen/Data/
 
 Lab 8 - Morpholigical Ops:  [MorphOperator.cs](OpenCVKitchen/Data/Operators/MorphOperator.cs)
 
-Lab 9 - Contours (Sobel, Canny, Mixed):   [ContoursOperator.cs](OpenCVKitchen/Data/Operators/ContoursOperator.cs)
+Lab 9 - Contours (Sobel, Canny, Mixed):   [TracingOperator.cs](OpenCVKitchen/Data/Operators/TracingOperator.cs)
 
 Lab 10 - Object Detection (Color replace):   [BackFillOperator.cs](OpenCVKitchen/Data/Operators/BackFillOperator.cs)
 
